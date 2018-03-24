@@ -1,0 +1,17 @@
+{
+  "configurations": [
+    {
+      "inheritEnvironments": [
+        "gcc-arm"
+      ],
+      "name": "gccarm",
+      "includePath": [
+        "${env.INCLUDE}"
+      ],
+      "defines": [
+
+      ],
+      "compilerSwitches": "-std=c++14"
+    }
+  ]
+}

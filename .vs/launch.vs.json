@@ -1,0 +1,60 @@
+{
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "cppdbg",
+      "name": "nucleo_motor.bin",
+      "project": "BUILD\\nucleo_motor.bin",
+      "cwd": "${workspaceRoot}",
+      "program": "${workspaceRoot}\\BUILD\\nucleo_motor.elf",
+      "MIMode": "gdb",
+      "externalConsole": true,
+      "logging": {
+        "trace": true,
+        "traceresponse": true,
+        "engineLogging": true
+      },
+      "inheritEnvironments": [
+        "gcc_arm"
+      ],
+      "miDebuggerPath": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Professional\\Linux\\gcc_arm\\bin\\arm-none-eabi-gdb.exe",
+      "setupCommands": [
+        {
+          "text": "Documentation: Learn how to configure embedded debugging",
+          "description": "See here for more info http://aka.ms/vsembeddeddebug",
+          "ignoreFailures": true
+        },
+        {
+          "text": "-environment-cd ${workspaceRoot}\\BUILD"
+        },
+        {
+          "text": "-file-exec-and-symbols nucleo_motor.elf",
+          "description": "load file",
+          "ignoreFailures": false
+        },
+        {
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        },
+        {
+          "text": "monitor reset halt",
+          "ignoreFailures": true
+        },
+        {
+          "text": "monitor reset init",
+          "ignoreFailures": true
+        }
+      ],
+      "visualizerFile": "${debugInfo.linuxNatvisPath}",
+      "showDisplayString": true,
+      "miDebuggerServerAddress": "localhost:3333",
+      "launchCompleteCommand": "None",
+      "debugServerPath": "E:\\openocd-0.10.0\\bin-x64\\openocd.exe",
+      "debugServerArgs": "-f E:\\openocd-0.10.0\\scripts\\board\\st_nucleo_f4.cfg",
+      "serverStarted": "Info : stm32f4x.cpu: hardware has 6 breakpoints, 4 watchpoints",
+      "filterStderr": true,
+      "filterStdout": true
+    }
+  ]
+}
