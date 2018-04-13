@@ -1,8 +1,8 @@
 {
   "ExpandedNodes": [
     "",
-    "\\mbed"
+    "\\BUILD"
   ],
-  "SelectedNode": "\\Makefile",
+  "SelectedNode": "\\CppProperties.json",
   "PreviewInSolutionExplorer": false
 }

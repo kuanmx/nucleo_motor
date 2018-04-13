@@ -10,7 +10,6 @@
 #define USBHOST_OTHER
 #define DEVICE_PORTINOUT 1 == 1
 #define TARGET_RTOS_M4_M7
-#define MBED_BUILD_TIMESTAMP 1 == 1520579178.68
 #define DEVICE_LOWPOWERTIMER 1 == 1
 #define DEVICE_RTC 1 == 1
 #define TOOLCHAIN_object
@@ -18,6 +17,7 @@
 #define TARGET_STM32F4
 #define __CMSIS_RTOS
 #define __CORTEX_M4
+#define TARGET_LIKE_MBED
 #define TOOLCHAIN_GCC
 #define DEVICE_I2C_ASYNCH 1 == 1
 #define TARGET_CORTEX_M
@@ -30,7 +30,7 @@
 #define DEVICE_INTERRUPTIN 1 == 1
 #define TARGET_CORTEX
 #define DEVICE_I2C 1 == 1
-#define TRANSACTION_QUEUE_SIZE_SPI 1 == 1 // ori value: 2
+#define TRANSACTION_QUEUE_SIZE_SPI = 2
 #define TARGET_NUCLEO_F411RE
 #define DEVICE_STDIO_MESSAGES 1 == 1
 #define TARGET_FF_MORPHO
@@ -40,7 +40,7 @@
 #define TARGET_RELEASE
 #define TARGET_STM
 #define DEVICE_SERIAL_FC 1 == 1
-#define TARGET_LIKE_MBED
+#define MBED_BUILD_TIMESTAMP 1 == 1523649287.99
 #define __MBED_CMSIS_RTOS_CM
 #define DEVICE_SLEEP 1 == 1
 #define TOOLCHAIN_GCC_ARM
@@ -52,6 +52,9 @@
 #define DEVICE_FLASH 1 == 1
 #define TARGET_STM32F411RE
 #define ARM_MATH_CM4
+#define TRANSACTION_QUEUE_SIZE_SPI 1 == 1
+#define __ARM_ARCH_7EM__ 1 == 1
+
 
 // Configuration parameters
 #define MBED_CONF_PLATFORM_FORCE_NON_COPYABLE_ERROR 0                            // set by library:platform
@@ -64,4 +67,4 @@
 #define MBED_CONF_PLATFORM_STDIO_FLUSH_AT_EXIT      1                            // set by library:platform
 
 #endif // __INTELLISENSE__
-#endif
+#endif // __INTELLISENSE__
