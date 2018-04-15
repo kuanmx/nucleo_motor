@@ -47,6 +47,7 @@
 #ifndef MBED_TEXTLCD_H
 #define MBED_TEXTLCD_H
 
+#include "..\intelliSense.h"
 #include "mbed.h"
 #include "TextLCD_Config.h"
 #include "TextLCD_UDC.h"

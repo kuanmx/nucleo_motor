@@ -38,7 +38,7 @@ void EncodedMotor::saveData()
     unsigned long long currentTime = timer.read_high_resolution_us();
     unsigned long long time_us =currentTime - _previousSaveTime;
     _previousSaveTime = currentTime;
-    double time_m = time_us*60/1000000.0;
+    double time_m = time_us/60/1000000.0;
     float rotation = (_pulseBuffer/(float)_pulsePerRotation); //rotation amount (rev)
     _pulseBuffer = 0;
     _speed = rotation/time_m; //rpm
@@ -65,6 +65,6 @@ void EncodedMotor::Stop()
 }
 std::tuple<double, unsigned long long> EncodedMotor::getSpeed() const
 {
-    unsigned long long timeDiff = _previousSaveTime - _previousReadTime;
-    return std::make_tuple(_speed, timeDiff);
+    unsigned long long timeDiff_us = _previousSaveTime - _previousReadTime;
+    return std::make_tuple(_speed, timeDiff_us);
 }

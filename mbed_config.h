@@ -46,7 +46,7 @@
 #define MBED_CONF_PPP_CELL_IFACE_AT_PARSER_BUFFER_SIZE    256                                                                                              // set by library:ppp-cell-iface
 #define MBED_CONF_PLATFORM_STDIO_FLUSH_AT_EXIT            1                                                                                                // set by library:platform
 #define MBED_LFS_READ_SIZE                                64                                                                                               // set by library:littlefs
-#define MBED_CONF_PLATFORM_STDIO_BAUD_RATE                9600                                                                                             // set by library:platform
+#define MBED_CONF_PLATFORM_STDIO_BAUD_RATE                115200                                                                                             // set by library:platform
 #define CLOCK_SOURCE                                      USE_PLL_HSE_EXTC|USE_PLL_HSI                                                                     // set by target:NUCLEO_F411RE
 #define MBED_CONF_PLATFORM_STDIO_BUFFERED_SERIAL          0                                                                                                // set by library:platform
 #define MBED_CONF_LORA_NWKSKEY                            {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00} // set by library:lora
@@ -55,7 +55,7 @@
 #define MBED_CONF_LORA_ADR_ON                             1                                                                                                // set by library:lora
 #define MBED_CONF_LORA_LBT_ON                             0                                                                                                // set by library:lora
 #define MBED_CONF_LORA_TX_MAX_SIZE                        64                                                                                               // set by library:lora
-#define MBED_CONF_PLATFORM_DEFAULT_SERIAL_BAUD_RATE       9600                                                                                             // set by library:platform
+#define MBED_CONF_PLATFORM_DEFAULT_SERIAL_BAUD_RATE       115200                                                                                             // set by library:platform
 #define MBED_CONF_RTOS_PRESENT                            1                                                                                                // set by library:rtos
 #define MBED_CONF_EVENTS_SHARED_EVENTSIZE                 256                                                                                              // set by library:events
 #define MBED_CONF_LORA_APP_PORT                           15                                                                                               // set by library:lora
