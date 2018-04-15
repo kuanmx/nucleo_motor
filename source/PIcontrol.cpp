@@ -1,17 +1,18 @@
 #include "..\intelliSense.h"	// for IntelliSense
 #include "mbed.h"
 #include "PIcontrol.h"
-#include "EncodedMotor.h"
 
-PIcontrol::PIcontrol(float Kp, float Ki, EncodedMotor* encodedMotor)
-	: _Kp(Kp), _Ki(Ki), _encodedMotor(encodedMotor)
+PIcontrol::PIcontrol(float Kp, float Ki)
+	: _Kp(Kp), _Ki(Ki)
 {
 }
 
-float PIcontrol::compensate_signal(float* error, float* timestep) 
+double PIcontrol::compensateSignal(double error, unsigned long timestep) 
 {
-	_thisError = *error; 
-	_timestep = *timestep; 
+	_compensateError = 0.0f; 
+
+	_thisError = error; 
+	_timestep = timestep; 
 
 	_compensateError += P_signal(); 
 	_compensateError += I_signal();
@@ -27,5 +28,5 @@ float PIcontrol::P_signal()
 float PIcontrol::I_signal()
 {
 	_accError_t += _thisError * _timestep; 
-	return _Ki * (_thisError - _accError_t); 
+	return _Ki * (_accError_t); 
 }

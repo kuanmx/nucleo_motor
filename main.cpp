@@ -4,6 +4,7 @@
 #include "source\EncodedMotor.h"	// motor encoder
 #include "source\debugMonitor.h"	// enable LCD2004 as debug monitor
 #include "source\TextLCD.h"
+#include "source\MotorControl.h"
 #include "mbed-os\rtos\Thread.h"
 #include "mbed-os\rtos\EventFlags.h"
 
@@ -15,9 +16,9 @@
 //// Declare connection//////////
 /////////////////////////////////
 // L298N Control Port
-PwmOut MotorEnable = PA_15;			// connect ENA to PA_15
-DigitalOut MotorDirection1 = PA_14; // connect IN1 to PA_14
-DigitalOut MotorDirection2 = PA_13; // connect IN2 to PA_13
+PinName MotorEnable = PA_15;			// connect ENA to PA_15
+PinName MotorDirection1 = PA_14; // connect IN1 to PA_14
+PinName MotorDirection2 = PA_13; // connect IN2 to PA_13
 DigitalOut SolenoidEnable = PB_7;	// connect ENB to PB_7
 // User Input Port
 PinName WeldStartStop = PA_11; 		// connect WeldStartStop Btn to PA_11
@@ -31,10 +32,15 @@ DigitalOut SolenoidOnLED = PB_14;	// connect SolenoidOnLED to PB_14
 PinName MotorEncoderA = PA_9;		// connect MotorEncoderA (blue) to PA_9 (D8)
 PinName MotorEncoderB = PA_8;		// connect MotorEncoderB (purple) to PA_8 (D7)
 
+// Specify PI control constant
+const uint16_t Kp = 1; 
+const uint16_t Ki = 0; 
+
 //// Initiate object
-EncodedMotor motor1(MotorEncoderA, MotorEncoderB, 1848*4, 1.0f, EncodeType::X4);	// Encoded Motor object
-RawSerial pc(SERIAL_TX, SERIAL_RX);							// serial communication protocol
-//debugMonitor debugger(knob, &motor1, &pc);					// update status through LCD2004 and Serial Monitor
+EncodedMotor encoder(MotorEncoderA, MotorEncoderB, 1848*4, 25, EncodeType::X4);	// Encoded Motor object
+RawSerial pc(SERIAL_TX, SERIAL_RX, 250000);							// serial communication protocol
+MotorControl motor1(MotorEnable, MotorDirection1, MotorDirection2, &encoder);	// motor controller object 
+DebugMonitor debugger(knob, &encoder, &pc);				// update status through LCD2004 and Serial Monitor
 Timer timer; 
 
 //// Declare interrupt
@@ -60,9 +66,6 @@ enum class motorState {
 	On,
 	Unsteady
 };
-std::tuple<double, unsigned long long> speedData; //debug
-double _speed = -1;	//debug
-unsigned long long _time = 88; 
 
 //// Define flags
 rtos::EventFlags toPrintSignal;				// LCD signal flag
@@ -113,10 +116,6 @@ void I2C_scan()
 		pc.printf("Valid Address: %#X ", val);		// print valid address
 	}
 }
-void motorpower(float _knobVal, PwmOut* _MotorEnable) {
-	// PWM of MotorEnable pin is equal to AnalogIn of potentiometer
-	_MotorEnable->write(_knobVal);
-}
 void statusUpdate()
 {
 	while (1)
@@ -124,73 +123,55 @@ void statusUpdate()
 		toPrintSignal.wait_all(1U);
 
 		//// Output status
-		// debugger.printSignal();
-
+		debugger.printSignal();
+		
 		//// Output Flags to Serial monitor
 		pc.printf("motorStartSignal: %d\n motorSteadySignal: %d\n weldSignal: %d\n SolenoidEnable = %d\n",
 			motorStartSignal, motorSteadySignal, weldSignal, SolenoidEnable.read());
-
-		wait(0.5f); 
-		pc.printf("Timer: %d\n Motor RPM: %f\n", timer.read_ms(), _speed);
+		pc.printf("Compensate: %f\n Speed: %f\n Error: %lf\n AdjError: %lf\n", 
+			motor1.readComp(), motor1.readSpeed(), motor1.readError(), motor1.readAdjError());
 	}
 }
 
-int main()
-{
-	MotorDirection1 = 0; MotorDirection2 = 1; 
-	motorInterrupt.rise([]() {MotorEnable = !MotorEnable; steadyPin = 1; steadyPin = 0; });				// Motor Button Intterupter
-	while (1)
-	{
-		wait(1); 
-		speedData = motor1.getSpeed(); //debug
-		_speed = std::get<0>(speedData);	//debug
-		_time = std::get<1>(speedData); 
-		pc.printf("Motor RPM: %f\n_time: %llu\n", _speed, _time);
+int main() {
+	pc.printf("Initiating\n"); 
+	// I2C Scanner.. comment out if not used... 
+	// I2C_scan(); 
+	
+	// Initiate Interrupt and Ticker
+	timer.start();
+	steadyInterrupt.rise([]() {motorBlinkLEDTicker.detach(); MotorOnLED = 1; motorSteadySignal = 1; });				// LED when motorSteadySignal toHigh
+	steadyInterrupt.fall([]() {motorBlinkLEDTicker.attach([]() 
+		{motorStartSignal ?  MotorOnLED = !MotorOnLED : MotorOnLED = 0; motorSteadySignal = 0; }, 0.5f); });		// LED when motorSteadySignal toLow (to blink or not? )
+	bridgeTicker.attach([]() {toPrintSignal.set(1U); }, 0.5f);														// Ticker for periodic interrupt
+	motorInterrupt.rise([]() {motorStartSignal = !motorStartSignal; steadyPin = 1; steadyPin = 0; });				// Motor Button Intterupter
+	weldingInterrupt.rise([&]() {
+		bool toSolenoid = motorStartSignal && motorSteadySignal && !weldSignal;  
+		toSolenoid ? weldSignal = true : weldSignal = false; });													// Welding Button Interrupter
+		
+	// Initiate Thread
+	statusUpdater.start(&statusUpdate); 
+
+	pc.printf("Ready\n"); 
+	
+	while (1) {
+		// Active-Deactive Motor Rotation
+		if (!motorStartSignal)
+		{
+			motor1.stop(); 
+		}
+		else
+		{
+			// motorpower(refSpeeWd.read(), &MotorEnable);	// Adjust motor signal... to be replace by PID 
+			// motorpower(1, &MotorEnable);	// Adjust motor signal... to be replace by PID 
+
+			// Set motorOnLEDState to blinking / solid light depends on motorSteadySignal 
+			motorSteadySignal ? steadyPin = 1 : steadyPin = 0;
+			motor1.run(0.7f); 
+		}
+			
+		// Active-Deactive Solenoid for start welding
+		SolenoidEnable = (int)weldSignal; 
+		SolenoidOnLED = (int)weldSignal; 
 	}
 }
-
-//
-//int main() {
-//	pc.printf("Initiating\n"); 
-//	// I2C Scanner.. comment out if not used... 
-//	// I2C_scan(); 
-//	
-//	// Initiate Interrupt and Ticker
-//	timer.start();
-//	steadyInterrupt.rise([]() {motorBlinkLEDTicker.detach(); MotorOnLED = 1; motorSteadySignal = 1; });				// LED when motorSteadySignal toHigh
-//	steadyInterrupt.fall([]() {motorBlinkLEDTicker.attach([]() 
-//		{motorStartSignal ?  MotorOnLED = !MotorOnLED : MotorOnLED = 0; motorSteadySignal = 0; }, 0.5f); });		// LED when motorSteadySignal toLow (to blink or not? )
-//	bridgeTicker.attach([]() {toPrintSignal.set(1U); }, 1.0f);														// Ticker for periodic interrupt
-//	motorInterrupt.rise([]() {motorStartSignal = !motorStartSignal; steadyPin = 1; steadyPin = 0; });				// Motor Button Intterupter
-//	weldingInterrupt.rise([&]() {
-//		bool toSolenoid = motorStartSignal && motorSteadySignal && !weldSignal;  
-//		toSolenoid ? weldSignal = true : weldSignal = false; });													// Welding Button Interrupter
-//		
-//	// Initiate Thread
-//	statusUpdater.start(&statusUpdate); 
-//
-//	pc.printf("Ready\n"); 
-//
-//	// for debug purpose.... remove in actual case
-//	MotorDirection1 = 1; MotorDirection2 = 0; 
-//
-//	while (1) {
-//		// Active-Deactive Motor Rotation
-//		if (!motorStartSignal)
-//		{
-//			MotorEnable = 0.0f; 
-//		}
-//		else
-//		{
-//			// motorpower(refSpeeWd.read(), &MotorEnable);	// Adjust motor signal... to be replace by PID
-//			motorpower(1, &MotorEnable);	// Adjust motor signal... to be replace by PID
-//
-//			// Set motorOnLEDState to blinking / solid light depends on motorSteadySignal
-//			motorSteadySignal ? steadyPin = 1 : steadyPin = 0;
-//		}
-//			
-//		// Active-Deactive Solenoid for start welding
-//		SolenoidEnable = (int)weldSignal; 
-//		SolenoidOnLED = (int)weldSignal; 
-//	}
-//}

@@ -10,8 +10,8 @@ class EncodedMotor;
 class PIcontrol {
 public:
 	PIcontrol() = delete; 
-	PIcontrol(float Kp, float Ki, EncodedMotor* encodedMotor);
-	float compensate_signal(float* error, float* timestep); 
+	PIcontrol(float Kp, float Ki);
+	double compensateSignal(double error, unsigned long timestep); 
 
 protected: 
 	float P_signal();
@@ -20,7 +20,6 @@ protected:
 private:
 	float _Kp = 0.0f; 
 	float _Ki = 0.0f; 
-	EncodedMotor* _encodedMotor; 
 
 	float _thisError = 0.0f; 
 	float _accError_t = 0.0f; 

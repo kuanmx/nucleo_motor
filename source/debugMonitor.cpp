@@ -1,8 +1,7 @@
-#include "debugMonitor.h"
+#include "DebugMonitor.h"
 #include "EncodedMotor.h"
-#include <tuple>
 
-debugMonitor::debugMonitor(PinName knobPin, EncodedMotor* motorPtr, RawSerial* rawserialPtr, PinName I2C1_SDA, PinName I2C1_SDL, uint16_t lcdAddr, TextLCD::LCDType lcdtype) :
+DebugMonitor::DebugMonitor(PinName knobPin, EncodedMotor* motorPtr, RawSerial* rawserialPtr, PinName I2C1_SDA, PinName I2C1_SDL, uint16_t lcdAddr, TextLCD::LCDType lcdtype) :
 	i2c(I2C1_SDA, I2C1_SDL), lcd(&i2c, lcdAddr << 1, lcdtype),
 	_knob(knobPin), _motorPtr(motorPtr), _rawserialPtr(rawserialPtr) 
 {
@@ -16,10 +15,10 @@ debugMonitor::debugMonitor(PinName knobPin, EncodedMotor* motorPtr, RawSerial* r
 	lcd.cls();
 }
 
-void debugMonitor::printSignal() {
-	std::tuple<double, unsigned long long> speedData = _motorPtr->getSpeed();
-	_speed = std::get<0>(speedData);
-	long long _timeDiff = std::get<1>(speedData); 
+void DebugMonitor::printSignal() {
+	_speedData = _motorPtr->getSpeed();
+	_speed = std::get<0>(_speedData);
+	_timeDiff = std::get<1>(_speedData); 
 	
 	////// Output to LCD2004
 	//// analogWrite value
@@ -35,6 +34,6 @@ void debugMonitor::printSignal() {
 
 	//// Output to Serial monitor
 	_rawserialPtr->printf("---\n"); 
-	_rawserialPtr->printf("refSpeed: %f\n Motor RPM: %f\n TimeDiff(us): %d\n",
+	_rawserialPtr->printf("refSpeed: %f\n Motor RPM: %f\n TimeDiff(us): %llu\n",
 		_knob.read()*24.0f, _speed, _timeDiff); 
 }
