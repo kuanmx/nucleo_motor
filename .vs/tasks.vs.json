@@ -3,26 +3,16 @@
   "tasks": [
     {
       "taskName": "Flash",
-      "appliesTo": "BUILD/nucleo_motor.bin",
+      "appliesTo": "BUILD/nucleo_motor_mbed_os.bin",
       "type": "launch",
       "command": "${env.COMSPEC}",
       "args": [
-        "copy BUILD\\nucleo_motor.bin F:"
+        "copy BUILD\\nucleo_motor_mbed_os.bin F:"
       ]
     },
     {
-      "taskName": "task-BUILD",
-      "appliesTo": "BUILD/",
-      "type": "launch"
-    },
-    {
-      "taskName": "task-nucleo_motor",
-      "appliesTo": "BUILD/nucleo_motor.bin",
-      "type": "launch"
-    },
-    {
-      "taskName": "task-Makefile",
-      "appliesTo": "Makefile",
+      "taskName": "task-nucleo_motor_mbed_os",
+      "appliesTo": "BUILD/nucleo_motor_mbed_os.bin",
       "type": "launch"
     }
   ]
