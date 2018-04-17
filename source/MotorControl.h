@@ -24,16 +24,17 @@ public:
 		C_Clockwise
 	};
 
-	/* start motor
+	/** start motor
 	* start motor gradually by factor set in MotorControl.h
 	* default factor is 2V / s
 	* max volt per step at 1.2V (0.1f)
 	* start from 1V (PwmOut 0.1f)
 	* input reference power for power (MotorControl will adjust motor to actual power)
+	* return true if in steady
 	*/
-	void run(double refPower);	
+	bool run(double refPower);	
 	
-	/* Stop motor
+	/** Stop motor
 	* slow down motor gradually by factor set in MotorControl.h
 	* default factor is 2V / s (0.02f per 100ms)
 	* cut off at 1V (analogRead 0.1f)
@@ -88,8 +89,9 @@ private:
 	const unsigned int factor = 2;  // Volt per 0.1s
 
 	// define funtion and object
-	void power(float powerIn);
+	void power(double powerIn);
 	Ticker ticker;
+	bool checkSteady(); 
 
 }; 
 #endif // ! MOTORCONTROL_H

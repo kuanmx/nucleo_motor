@@ -5,7 +5,6 @@
 #include "..\rtos\EventFlags.h"
 
 rtos::Thread thread; 
-rtos::EventFlags toslowdown; 
 
 MotorControl::MotorControl(PinName motorEnablePin, PinName motorDirectionPin1, PinName motorDirectionPin2, EncodedMotor * encodedMotor, float Kp, float Ki, uint16_t ratedRPM) :
 	_motorEnablePin(motorEnablePin), _motorDirectionPin1(motorDirectionPin1), _motorDirectionPin2(motorDirectionPin2), _encodedMotor(encodedMotor), 
@@ -16,21 +15,13 @@ MotorControl::MotorControl(PinName motorEnablePin, PinName motorDirectionPin1, P
 
 	// default direction clockwise
 	setDirection(0); 
-
-	thread.start([=](){toslowdown.wait_all(1U); _motorEnable = _speedVolt - (double)(factor * 0.01); wait(0.1); });
 }
 
 MotorControl::~MotorControl() {
 	delete _picontrol;
 }
 
-/* start motor
-* start motor gradually by factor set in MotorControl.h
-* default factor is 2V / s
-* max volt per step at 1.2V (0.1f)
-* start from 1V (PwmOut 0.1f)
-*/
-void MotorControl::run(double refVolt)
+bool MotorControl::run(double refVolt)
 {
 	_speedData = _encodedMotor->getSpeed();
 	_speed = std::get<0>(_speedData);			// get speed in RPM
@@ -42,8 +33,10 @@ void MotorControl::run(double refVolt)
 	* default factor is 2V / s (0.02f per 100ms, refresh rate)
 	*/
 	_errorVolt = refVolt * 100 - _speedVolt;
-	if (_errorVolt > 5) _adjerrorVolt = 5; 
-	else if (_errorVolt < -5) _adjerrorVolt = -5; 
+	if (_errorVolt > 5) _adjerrorVolt = 5;
+	else if (_errorVolt < -5) _adjerrorVolt = -5;
+	else if (_errorVolt > 2) _adjerrorVolt = 2;
+	else if (_errorVolt < -2) _adjerrorVolt = -2;
 	else if (_errorVolt < 0.4 && _errorVolt > -0.4) _adjerrorVolt = 0; 
 	else _adjerrorVolt = _errorVolt; 
 
@@ -54,12 +47,12 @@ void MotorControl::run(double refVolt)
 
 		// PI Controller
 		_compVolt += _picontrol->compensateSignal(_adjerrorVolt, timestep);
-
 		_compVolt > 100 ? _compVolt = 100 : 0; 
 
 		power(_compVolt/100);		// output to Motor
 		_prevTime = _thisTime;		// update Timestep
 	}
+	return checkSteady(); 
 }
 
 /* Stop motor
@@ -69,20 +62,17 @@ void MotorControl::run(double refVolt)
 */
 void MotorControl::stop()
 {
-	_compVolt = 0; 
-	power(_compVolt); 
-//	_speedData = _encodedMotor->getSpeed();
-//	_speed = std::get<0>(_speedData);			// get speed in RPM
-//	_speedVolt = _speed / 24;					// 24rpm rated speed
-//	if (_speedVolt > 0.1f)
-//	{
-//		// Gradual slow procedure
-//		toslowdown.set(1U); 
-//	}
-//	else
-//	{
-//		_motorEnable = 0;
-//	}
+	_speedData = _encodedMotor->getSpeed();
+	_speed = std::get<0>(_speedData);			// get speed in RPM
+	_speedVolt = _speed * 100 / 24;				// 24rpm rated speed
+	_thisTime = std::get<1>(_speedData);		// get current timestep (us)
+	if (_thisTime > _prevTime)
+	{
+		// Gradual slow procedure
+		_speedVolt > 1.0f ? _compVolt -= 3.0 : _compVolt = 0;
+		power(_compVolt);
+		_prevTime = _thisTime; 
+	}
 }
 
 void MotorControl::setDirection(MotorControl::Direction direction = MotorControl::Direction::Clockwise)
@@ -104,4 +94,9 @@ double MotorControl::readError() { return _errorVolt;  }
 
 double MotorControl::readAdjError() { return _adjerrorVolt; }
 
-void MotorControl::power(float powerIn) { _motorEnable = powerIn; }
+void MotorControl::power(double powerIn) { _motorEnable = powerIn; }
+
+bool MotorControl::checkSteady()
+{
+	return false;
+}

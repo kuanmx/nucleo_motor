@@ -12,7 +12,7 @@ double PIcontrol::compensateSignal(double error, unsigned long timestep)
 	_compensateError = 0.0f; 
 
 	_thisError = error; 
-	_timestep = timestep; 
+	_timestep = (double) timestep / 1000000;
 
 	_compensateError += P_signal(); 
 	_compensateError += I_signal();
