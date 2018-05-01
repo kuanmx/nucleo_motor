@@ -8,31 +8,33 @@
 #include "..\intelliSense.h"
 #include <mbed.h>
 #include <vector>
+#include <memory>
 
 namespace{
     //bytes are in order of: a, b, c, d, e, f, g, DP
-    const uint8_t characterMap[] = {0b11111100, //0
-                                    0b01100000, //1
-                                    0b11011010, //2
-                                    0b11110010, //3
-                                    0b01100110, //4
-                                    0b10110110, //5
-                                    0b10111110, //6
-                                    0b11100000, //7
+    //bytes are in order of: g, f, e, d, c, b, a, DP
+    const uint8_t characterMap[] = {0b01111110, //0
+                                    0b00001100, //1
+                                    0b10110110, //2
+                                    0b10011110, //3
+                                    0b11001100, //4
+                                    0b11011010, //5
+                                    0b11111010, //6
+                                    0b00001110, //7
                                     0b11111110, //8
-                                    0b11110110, //9
-                                    0b10011110, //Error
+                                    0b11011110, //9
+                                    0b11110010, //Error
     };
 }
 
 class ShiftReg7Seg {
 public:
     ShiftReg7Seg() = delete;
-    ShiftReg7Seg(SPI& spiObj, PinName latchPin, unsigned int numberOfDisplay = 4, PinName MRPin = NC);
-	ShiftReg7Seg(SPI& spiObj, PinName latchPin, RawSerial* pcSerial);
+//    ShiftReg7Seg(SPI *spiObj, PinName latchPin, unsigned int numberOfDisplay = 4, PinName MRPin = NC);
+    ShiftReg7Seg(PinName MOSI_Pin, PinName MISO_Pin, PinName SCK_Pin, PinName latchPin, unsigned int numberOfDisplay = 4, PinName MRPin = NC);
 
     //public methods
-    std::vector<int> display(double value);
+    std::vector<uint8_t> display(double value);
     void clearAll();
 
     //getters & setters
@@ -42,11 +44,9 @@ public:
     void setNumberOfDP(int _numberOfDP);
 
 private:
-    std::vector<int> displayDigits(std::vector<uint8_t>& digitArray);
-
-    SPI& _spi;
+    std::vector<uint8_t> displayDigits(std::vector<uint8_t>& digitArray);
+    std::unique_ptr<SPI> _spiPtr;
     DigitalOut _latchPin;
-	RawSerial *_pcSerial = nullptr;
     DigitalOut _MRPin;
     unsigned int _numberOfDisplay = 4;
     int _numberOfDP = 0;

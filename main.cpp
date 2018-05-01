@@ -1,19 +1,19 @@
 #include "intelliSense.h"	// for IntelliSense
+#include "mbed_config.h"
 #include <mbed.h>
 #include <vector>
-#include <memory>
-#include "source\EncodedMotor.h"	// motor encoder
-#include "source\debugMonitor.h"	// enable LCD2004 as debug monitor
-#include "source\TextLCD.h"
-#include "source\MotorControl.h"
-#include "source\EventVariable.h"
-#include "source\ShiftReg7Seg.h"
-#include "mbed_stats.h"
+#include "source/EncodedMotor.h"	// motor encoder
+#include "source/DebugMonitor.h"	// enable LCD2004 as debug monitor
+#include <TextLCD.h>
+#include <source/ShiftReg7Seg.h>
+#include "source/MotorControl.h"
+#include "source/EventVariable.h"
+//#include "mbed-os/rtos/Thread.h"
+//#include "mbed-os/rtos/EventFlags.h"
 
 // set baudrate at mbed_config.h default 115200
 // I2C scanner included, derived from Arduino I2C scanner
 // http://www.gammon.com.au/forum/?id=10896
-
 /////////////////////////////////
 //// Declare connection//////////
 /////////////////////////////////
@@ -61,6 +61,7 @@ void analyseUpdate();
 void motorStartBtnChangeEvent(bool &);		// Determine motor start status
 void motorRunner(); 
 void MotorLEDBlinker(bool&); 
+
 
 // Initiate EventVariable
 EventVariable<bool> statusUpdateFlag(true, &statusUpdate);
@@ -158,9 +159,10 @@ void MotorLEDBlinker(bool& motorSteady)			// Run motor and set motorOnLED to bli
 	else motorBlinkLEDTicker.attach([]() {MotorLED = !MotorLED; }, 0.5f);
 }
 
-SPI SPI7Seg(SPI_MOSI, SPI_MISO, SPI_SCK);
-ShiftReg7Seg display7Seg(SPI7Seg, SPI_CS, &pc);
 
+ShiftReg7Seg disp1(SPI_MOSI, SPI_MISO, SPI_SCK, SPI_CS, 4);
+Thread dispThread;
+volatile float currentSpeed;
 int main() {
 	SPI7Seg.frequency(10000);
 	//pc.printf("Initiating\n");
@@ -181,15 +183,44 @@ int main() {
 	//	// Active-Deactive Solenoid for start welding
 	//	SolenoidEnable = (int)weldSignal;
 	//	SolenoidOnLED = (int)weldSignal;
+//    while(1){
+//        for(int i =0;i<100;i++){
+//            double val = i/10.0;
+//            pc.printf("Printing: %f\n", val);
+//            disp1.display(val);
+//            pc.printf("--------------------\n");
+//            wait(0.5);
+//        }
+//    }
+    dispThread.start([](){
+        while(1){
+        disp1.display(currentSpeed);
+        wait(0.1);}
+    });
+    while(1){
+        currentSpeed = refSpeed.read();
+    }
 
-	//	if (motorStartBtnChange.value) { motorRunner(); }		// to keep feeding updated signal to run motor
-	//	else { motorStopper();}		// to keep feeding updated signal to stop motor
-	//}
-	for(int i =0;i<2;i++){
-		auto returnArr = display7Seg.display(1.111);
-		pc.printf("----------------------\n");
-		wait(2);
-	}
-
-
+//	pc.printf("Initiating\n");
+//	// I2C Scanner.. comment out if not used...
+//	// I2C_scan();
+//
+//	// Initiate Interrupt and Ticker
+//	motorBtn.rise([]() {motorStartBtnChange = !motorStartBtnChange; });				// motorBtn OnChange
+//	weldingBtn.rise([&]() {
+//		bool toSolenoid = motorStartBtnChange.value && motorSteadySignal.value && !weldSignal;
+//		toSolenoid ? weldSignal = true : weldSignal = false; });					// weldingBtn OnChange
+//
+//	statusUpdater.attach([]() {statusUpdateFlag = 0; }, 0.5f);						// periodic status update
+//
+//	pc.printf("Ready\n");
+//
+//	while (1) {
+//		// Active-Deactive Solenoid for start welding
+//		SolenoidEnable = (int)weldSignal;
+//		SolenoidOnLED = (int)weldSignal;
+//
+//		if (motorStartBtnChange.value) { motor1.run(refSpeed.read());}	 //motorRunner(); }
+//		else { motor1.stop(); motorRunnerThread.terminate(); }
+//	}
 }

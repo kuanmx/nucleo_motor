@@ -518,12 +518,14 @@ INCLUDE_PATHS += -I../mbed-os/targets/TARGET_STM/TARGET_STM32F4/TARGET_STM32F411
 INCLUDE_PATHS += -I../mbed-os/targets/TARGET_STM/TARGET_STM32F4/device
 
 # user file
-OBJECTS += source/TextLCD.o
+OBJECTS += Libraries/TextLCD/TextLCD.o
 OBJECTS += source/ShiftReg7Seg.o
 OBJECTS += source/DebugMonitor.o
 OBJECTS += source/EncodedMotor.o
 OBJECTS += source/MotorControl.o
 OBJECTS += source/PIcontrol.o
+INCLUDE_PATHS += -I../Libraries/TextLCD
+INCLUDE_PATHS += -I../source
 LIBRARY_PATHS :=
 LIBRARIES :=
 LINKER_SCRIPT ?= ../mbed-os/targets/TARGET_STM/TARGET_STM32F4/TARGET_STM32F411xE/device/TOOLCHAIN_GCC_ARM/STM32F411XE.ld
