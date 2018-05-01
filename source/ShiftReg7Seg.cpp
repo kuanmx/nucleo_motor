@@ -4,11 +4,19 @@
 
 #include "ShiftReg7Seg.h"
 
-ShiftReg7Seg::ShiftReg7Seg(SPI& spiObj, PinName latchPin, unsigned int numberOfDisplay, PinName MRPin)
-        :_spi(spiObj), _latchPin(latchPin), _MRPin(MRPin), _numberOfDisplay(numberOfDisplay)
+//ShiftReg7Seg::ShiftReg7Seg(SPI *spiObj, PinName latchPin, unsigned int numberOfDisplay, PinName MRPin)
+//        :_spiPtr(spiObj), _latchPin(latchPin), _MRPin(MRPin), _numberOfDisplay(numberOfDisplay)
+//{
+//    _numberOfDP = _numberOfDisplay -1;
+//    _MRPin = 1;
+//}
+ShiftReg7Seg::ShiftReg7Seg(PinName MOSI_Pin, PinName MISO_Pin, PinName SCK_Pin, PinName latchPin,
+        unsigned int numberOfDisplay, PinName MRPin) : _spiPtr(std::make_unique<SPI>(MOSI_Pin, MISO_Pin, SCK_Pin)),
+                                                       _latchPin(latchPin), _MRPin(MRPin), _numberOfDisplay(numberOfDisplay)
 {
-    _numberOfDP = _numberOfDisplay -1;
+    _numberOfDP = _numberOfDisplay - 1;
     _MRPin = 1;
+    _spiPtr->frequency(40000000);
 }
 unsigned int ShiftReg7Seg::getNumberOfDisplay() const
 {
@@ -26,14 +34,14 @@ void ShiftReg7Seg::setNumberOfDP(int _numberOfDP)
 {
     ShiftReg7Seg::_numberOfDP = _numberOfDP;
 }
-std::vector<int> ShiftReg7Seg::display(double value)
+std::vector<uint8_t> ShiftReg7Seg::display(double value)
 {
     double logVal = log10(value);
     logVal>=0 ? logVal : logVal = 0;
     auto numberOfDigits = static_cast<unsigned> (floor(logVal)+1);
     if (numberOfDigits>_numberOfDisplay) {
         std::vector<uint8_t> errorArray(_numberOfDisplay, characterMap[10]);
-        return displayDigits(errorArray);  // fix by Kuan 13/4 regarding warning control reaches end of non-void function
+        return displayDigits(errorArray);
     }
     else {
         std::vector<uint8_t> numArray(_numberOfDisplay);
@@ -50,13 +58,14 @@ std::vector<int> ShiftReg7Seg::display(double value)
     }
 }
 
-std::vector<int> ShiftReg7Seg::displayDigits(std::vector<uint8_t>& digitArray)
+std::vector<uint8_t> ShiftReg7Seg::displayDigits(std::vector<uint8_t>& digitArray)
 {
-    std::vector<int> returnArray;
+    std::vector<uint8_t> returnArray;
     returnArray.reserve(digitArray.size());
-    for (auto& val: digitArray) {
+    for (auto iter = std::rbegin(digitArray);iter!=std::rend(digitArray);iter++) {
         _latchPin = 0;
-        returnArray.push_back(_spi.write(static_cast<uint8_t>(val)));
+        _spiPtr->write(*iter);
+        returnArray.push_back(static_cast<uint8_t>(_spiPtr->write(*iter)));
         _latchPin = 1;
     }
     return returnArray;
