@@ -23,6 +23,8 @@ MotorControl::~MotorControl() {
 
 bool MotorControl::run(double refVolt)
 {
+	if (_compVolt == 0) { refVolt > 0 ? setDirection(Direction::Clockwise) : setDirection(Direction::C_Clockwise); }
+
 	_speedData = _encodedMotor->getSpeed();
 	_speed = std::get<0>(_speedData);			// get speed in RPM
 	_speedVolt = _speed *100 / 24;				// 24rpm rated speed
@@ -35,8 +37,8 @@ bool MotorControl::run(double refVolt)
 	_errorVolt = refVolt * 100 - _speedVolt;
 	if (_errorVolt > 5) _adjerrorVolt = 5;
 	else if (_errorVolt < -5) _adjerrorVolt = -5;
-	else if (_errorVolt > 2) _adjerrorVolt = 2;
-	else if (_errorVolt < -2) _adjerrorVolt = -2;
+	//else if (_errorVolt > 2) _adjerrorVolt = 2;
+	//else if (_errorVolt < -2) _adjerrorVolt = -2;
 	else if (_errorVolt < 0.4 && _errorVolt > -0.4) _adjerrorVolt = 0; 
 	else _adjerrorVolt = _errorVolt; 
 
@@ -69,7 +71,7 @@ void MotorControl::stop()
 	if (_thisTime > _prevTime)
 	{
 		// Gradual slow procedure
-		_speedVolt > 1.0f ? _compVolt -= 3.0 : _compVolt = 0;
+		_speedVolt > 3.0f ? _compVolt -= 3.0 : _compVolt = 0;
 		power(_compVolt);
 		_prevTime = _thisTime; 
 	}

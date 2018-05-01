@@ -10,6 +10,13 @@ ShiftReg7Seg::ShiftReg7Seg(SPI& spiObj, PinName latchPin, unsigned int numberOfD
     _numberOfDP = _numberOfDisplay -1;
     _MRPin = 1;
 }
+ShiftReg7Seg::ShiftReg7Seg(SPI& spiObj, PinName latchPin, RawSerial* pcSerial)
+: _spi(spiObj), _latchPin(latchPin), _pcSerial(pcSerial), _MRPin(NC), _numberOfDisplay(4)
+{
+	_numberOfDP = _numberOfDisplay - 1;
+	_MRPin = 1;
+}
+
 unsigned int ShiftReg7Seg::getNumberOfDisplay() const
 {
     return _numberOfDisplay;
@@ -46,6 +53,7 @@ std::vector<int> ShiftReg7Seg::display(double value)
             numArray[i] = characterMap[digit];
         }
         numArray[numberOfDigits-1] = static_cast<uint8_t>(numArray[numberOfDigits-1] | 0b00000001);
+
         return displayDigits(numArray);
     }
 }
@@ -54,10 +62,28 @@ std::vector<int> ShiftReg7Seg::displayDigits(std::vector<uint8_t>& digitArray)
 {
     std::vector<int> returnArray;
     returnArray.reserve(digitArray.size());
-    for (auto& val: digitArray) {
+	for (auto &val: digitArray) {
         _latchPin = 0;
-        returnArray.push_back(_spi.write(static_cast<uint8_t>(val)));
-        _latchPin = 1;
+		auto tempReturnVal = _spi.write(val);
+		if (_pcSerial != nullptr) {
+
+			_pcSerial->printf("Send: ");
+			for (int i = 0; i < 8; i++) {
+				auto temp = 0b10000000 >> i;
+				_pcSerial->printf("%u", (val&temp) ? 1 : 0);
+			}
+			_pcSerial->printf("\n");
+
+			_pcSerial->printf("Receive: ");
+			for (int i = 0; i < 8; i++) {
+				uint8_t temp = 0b10000000 >> i;
+				_pcSerial->printf("%u", (tempReturnVal&temp) ? 1 : 0);
+			}
+			_pcSerial->printf("\n");
+		}
+		_latchPin = 1;
+        returnArray.push_back(tempReturnVal);
+		wait(1);
     }
     return returnArray;
 

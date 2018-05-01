@@ -29,6 +29,7 @@ class ShiftReg7Seg {
 public:
     ShiftReg7Seg() = delete;
     ShiftReg7Seg(SPI& spiObj, PinName latchPin, unsigned int numberOfDisplay = 4, PinName MRPin = NC);
+	ShiftReg7Seg(SPI& spiObj, PinName latchPin, RawSerial* pcSerial);
 
     //public methods
     std::vector<int> display(double value);
@@ -45,6 +46,7 @@ private:
 
     SPI& _spi;
     DigitalOut _latchPin;
+	RawSerial *_pcSerial = nullptr;
     DigitalOut _MRPin;
     unsigned int _numberOfDisplay = 4;
     int _numberOfDP = 0;
