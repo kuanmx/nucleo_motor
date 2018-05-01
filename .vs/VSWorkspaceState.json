@@ -1,7 +1,9 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\BUILD",
+    "\\source"
   ],
-  "SelectedNode": "\\Makefile",
+  "SelectedNode": "\\BUILD\\nucleo_motor_mbed_os.bin",
   "PreviewInSolutionExplorer": false
 }

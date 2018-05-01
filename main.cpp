@@ -4,12 +4,10 @@
 #include <vector>
 #include "source/EncodedMotor.h"	// motor encoder
 #include "source/DebugMonitor.h"	// enable LCD2004 as debug monitor
-#include <TextLCD.h>
-#include <source/ShiftReg7Seg.h>
+#include "source/TextLCD.h"
+#include "source/ShiftReg7Seg.h"
 #include "source/MotorControl.h"
 #include "source/EventVariable.h"
-//#include "mbed-os/rtos/Thread.h"
-//#include "mbed-os/rtos/EventFlags.h"
 
 // set baudrate at mbed_config.h default 115200
 // I2C scanner included, derived from Arduino I2C scanner
@@ -36,26 +34,19 @@ PinName MotorEncoderB = PA_8;		// connect MotorEncoderB (purple) to PA_8 (D7)
 
 //// Initiate object
 EncodedMotor encoder(MotorEncoderA, MotorEncoderB, 1848*4, 10, EncodeType::X4);		// Encoded Motor object
-MotorControl motor1(MotorEnable, 
-	MotorDirection1, MotorDirection2, &encoder, 0.5, 0.015);		// motor controller object, Kp and Ki specified
+std::unique_ptr<MotorControl> motor1 = std::make_unique<MotorControl>(MotorEnable, 
+	MotorDirection1, MotorDirection2, &encoder, 0.16, 0.01);		// motor controller object, Kp and Ki specified
 RawSerial pc(SERIAL_TX, SERIAL_RX, 250000);		// serial communication protocol
 DebugMonitor debugger(knob, &encoder, &pc);		// update status through LCD2004 and Serial Monitor
-Timer timer; 
 
 //// Declare interrupt
 Ticker statusUpdater;			// Periodic Interrupt for debugging purpose
 Ticker motorBlinkLEDTicker;		// LED Blinker
 InterruptIn motorBtn(MotorStartStop);		// Motor Button Interrupt
-InterruptIn weldingBtn(WeldStartStop);	// Welding Button Interrupt
-// InterruptIn steadyBtnInterrupt(PC_13);			// Steady State Button Interrupt (for debug)
-//DigitalOut steadyPin(PC_12);					// Steady State Changer
-//EventVariable<DigitalOut> steadyPin
-//InterruptIn steadyInterrupt(PC_10);				// Steady State Change Interrupt
+InterruptIn weldingBtn(WeldStartStop);		// Welding Button Interrupt
 
 //// Declare thread
 Thread motorLEDBlinking;		// Thread to perform LED Blinking
-rtos::Thread motorRunnerThread;		// To keep motor running
-
 //// Define constants
 volatile bool weldSignal = false;			// Start welding flag
 // volatile bool motorStartBtnChange = false;		// Start motor flag
@@ -64,6 +55,7 @@ volatile bool prevMotorSteady = false;		// Store previous motor steady state
 //// Fwd declare
 void I2C_scan(); 
 void statusUpdate(); 
+void analyseUpdate(); 
 void motorStartBtnChangeEvent(bool &);		// Determine motor start status
 void motorRunner(); 
 void MotorLEDBlinker(bool&); 
@@ -71,9 +63,11 @@ void MotorLEDBlinker(bool&);
 
 // Initiate EventVariable
 EventVariable<bool> statusUpdateFlag(true, &statusUpdate);
+//EventVariable<bool> statusUpdateFlag(true, &analyseUpdate);
 EventVariable<bool> motorStartBtnChange(false, &motorStartBtnChangeEvent);
 EventVariable<bool> motorSteadySignal(true, &MotorLEDBlinker);
 
+mbed_stats_heap_t heap_stats;
 //// Define function
 void I2C_scan()
 {
@@ -125,12 +119,17 @@ void statusUpdate()
 	// Output status
 	debugger.printSignal();
 
+	mbed_stats_heap_get(&heap_stats);
+	printf("Current heap after: %lu\r\n", heap_stats.current_size);
+	printf("Max heap size after: %lu\r\n", heap_stats.max_size);
+
 	// Output Flags to Serial monitor
 	pc.printf("motorStartBtnChange: %d\n motorSteadySignal: %d\n weldSignal: %d\n SolenoidEnable = %d\n",
-		motorStartBtnChange, motorSteadySignal, weldSignal, SolenoidEnable.read());
+		motorStartBtnChange.value, motorSteadySignal.value, (int)weldSignal, SolenoidEnable.read());
 	pc.printf("Compensate: %f\n Speed: %f\n Error: %lf\n AdjError: %lf\n",
-		motor1.readComp(), motor1.readSpeed(), motor1.readError(), motor1.readAdjError());
+		motor1->readComp(), motor1->readSpeed(), motor1->readError(), motor1->readAdjError());
 }
+void analyseUpdate() { pc.printf("%f %f %f %f\n", refSpeed.read()*100, motor1->readSpeed(), motor1->readError(), motor1->readAdjError()); }
 void motorStartBtnChangeEvent(bool &motorState) {
 	// Active-Deactive Motor Rotation
 	if (!motorState) {
@@ -143,10 +142,14 @@ void motorStartBtnChangeEvent(bool &motorState) {
 }
 void motorRunner() 
 {
-	pc.printf("MotorRunner()\n"); 
-	bool tempMotorSteady = motor1.run(refSpeed.read());			// run motor1 and read motor1 steady state
+	bool tempMotorSteady = motor1->run(refSpeed.read());			// run motor1 and read motor1 steady state
 	if (tempMotorSteady != prevMotorSteady) motorSteadySignal = tempMotorSteady; 
 	prevMotorSteady = tempMotorSteady; 
+}
+void motorStopper()
+{
+	motorSteadySignal = 0; 
+	motor1->stop();
 }
 void MotorLEDBlinker(bool& motorSteady)			// Run motor and set motorOnLED to blinking / solid light
 {
@@ -159,6 +162,25 @@ ShiftReg7Seg disp1(SPI_MOSI, SPI_MISO, SPI_SCK, SPI_CS, 4);
 Thread dispThread;
 volatile float currentSpeed;
 int main() {
+	SPI7Seg.frequency(10000);
+	//pc.printf("Initiating\n");
+	//// I2C Scanner.. comment out if not used... 
+	//// I2C_scan(); 
+
+	//// Initiate Interrupt and Ticker
+	//motorBtn.rise([]() {motorStartBtnChange = !motorStartBtnChange; });				// motorBtn OnChange
+	//weldingBtn.rise([&]() {
+	//	bool toSolenoid = motorStartBtnChange.value && motorSteadySignal.value && !weldSignal;
+	//	toSolenoid ? weldSignal = true : weldSignal = false; });					// weldingBtn OnChange
+
+	//statusUpdater.attach([]() {statusUpdateFlag = 0; }, 0.5f);						// periodic status update
+
+	//pc.printf("Ready\n");
+
+	//while (1) {
+	//	// Active-Deactive Solenoid for start welding
+	//	SolenoidEnable = (int)weldSignal;
+	//	SolenoidOnLED = (int)weldSignal;
 //    while(1){
 //        for(int i =0;i<100;i++){
 //            double val = i/10.0;

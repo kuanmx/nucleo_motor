@@ -11,7 +11,7 @@ class EncodedMotor;
 class PIcontrol;
 
 /** Motor Controller with PI Control
-* 
+* run(*) and stop() method must be placed in continuous loop
 */
 class MotorControl {
 public:
@@ -53,13 +53,6 @@ public:
 		run(powerIn);
 		return *this;
 	}*/
-
-	// Shorthand for MotorControl::read()
-	//operator float() {
-	//	// Underlying call is thread safe
-	//	return read();
-	//}
-
 protected:
 
 private:

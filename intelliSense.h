@@ -56,6 +56,7 @@
 #define __ARM_ARCH_7EM__ 1 == 1
 
 
+#include "mbed_config.h"
 // Configuration parameters
 #define MBED_CONF_PLATFORM_FORCE_NON_COPYABLE_ERROR 0                            // set by library:platform
 #define MBED_CONF_PLATFORM_DEFAULT_SERIAL_BAUD_RATE 115200                       // set by library:platform

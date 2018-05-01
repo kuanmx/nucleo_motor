@@ -18,6 +18,13 @@ ShiftReg7Seg::ShiftReg7Seg(PinName MOSI_Pin, PinName MISO_Pin, PinName SCK_Pin, 
     _MRPin = 1;
     _spiPtr->frequency(40000000);
 }
+ShiftReg7Seg::ShiftReg7Seg(SPI& spiObj, PinName latchPin, RawSerial* pcSerial)
+: _spi(spiObj), _latchPin(latchPin), _pcSerial(pcSerial), _MRPin(NC), _numberOfDisplay(4)
+{
+	_numberOfDP = _numberOfDisplay - 1;
+	_MRPin = 1;
+}
+
 unsigned int ShiftReg7Seg::getNumberOfDisplay() const
 {
     return _numberOfDisplay;
@@ -54,6 +61,7 @@ std::vector<uint8_t> ShiftReg7Seg::display(double value)
             numArray[i] = characterMap[digit];
         }
         numArray[numberOfDigits-1] = static_cast<uint8_t>(numArray[numberOfDigits-1] | 0b00000001);
+
         return displayDigits(numArray);
     }
 }
