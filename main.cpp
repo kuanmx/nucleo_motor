@@ -4,12 +4,10 @@
 #include <vector>
 #include "source/EncodedMotor.h"	// motor encoder
 #include "source/DebugMonitor.h"	// enable LCD2004 as debug monitor
-#include <TextLCD.h>
-#include <source/ShiftReg7Seg.h>
+#include "source/TextLCD.h"
+#include "source/ShiftReg7Seg.h"
 #include "source/MotorControl.h"
 #include "source/EventVariable.h"
-//#include "mbed-os/rtos/Thread.h"
-//#include "mbed-os/rtos/EventFlags.h"
 
 // set baudrate at mbed_config.h default 115200
 // I2C scanner included, derived from Arduino I2C scanner
