@@ -34,3 +34,7 @@
 # Folder
 **/BUILD/
 **/.vs/
+**/.idea/
+**/cmake-build-debug/
+
+CMakeLists.txt
